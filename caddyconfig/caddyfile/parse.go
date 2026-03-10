@@ -302,6 +302,26 @@ func (p *parser) blockContents() error {
 		return err
 	}
 
+	// Remove disposable tokens in keys
+	keys := make([]Token, 0, len(p.block.Keys))
+	for _, token := range p.block.Keys {
+		if !token.Disposable {
+			keys = append(keys, token)
+		}
+	}
+	p.block.Keys = keys
+
+	// Remove disposable tokens in segments
+	for i, segment := range p.block.Segments {
+		tokens := make([]Token, 0, len(segment))
+		for _, token := range segment {
+			if !token.Disposable {
+				tokens = append(tokens, token)
+			}
+		}
+		p.block.Segments[i] = tokens
+	}
+
 	// only look for close curly brace if there was an opening
 	if errOpenCurlyBrace == nil {
 		err = p.closeCurlyBrace()
@@ -550,6 +570,13 @@ func (p *parser) doImport(nesting int) error {
 		}
 
 		if foundBlockDirective {
+			if len(tokensToAdd) == 0 {
+				// if there is no content in the snippet block, either it will be unused, or replaced later (like in case
+				// of imports across multiple files).
+				// Mark the token as disposable. It will be removed when all imports are processed.
+				token.Disposable = true
+				tokensCopy = append(tokensCopy, token)
+			}
 			tokensCopy = append(tokensCopy, tokensToAdd...)
 			continue
 		}

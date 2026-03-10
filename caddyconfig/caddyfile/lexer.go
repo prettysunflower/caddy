@@ -45,6 +45,7 @@ type (
 		wasQuoted     rune // enclosing quote character, if any
 		heredocMarker string
 		snippetName   string
+		Disposable    bool
 	}
 )
 
